@@ -1,0 +1,90 @@
+---
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '../styles/index.css';
+import Navigation from '../components/Navigation';
+import Hero from '../components/Hero';
+import About from '../components/About';
+import Episodes from '../components/Episodes';
+import Hosts from '../components/Hosts';
+import Footer from '../components/Footer';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg" href="/sinlogo.jpeg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Sin Vergüenza Podcast | Healing &amp; Growth for the First-Gen Experience</title>
+    <meta name="title" content="Sin Vergüenza Podcast | Healing &amp; Growth for the First Gen Experience" />
+    <meta name="description" content="Sin Vergüenza Podcast: Honest conversations on growth, mental health, and inner child healing. Exploring the first gen experience and living life without shame." />
+    <meta name="keywords" content="Sin Vergüenza, Mental Health Podcast, First Generation Podcast, Inner Child Healing, Self Sabotage, Latinx Mental Health, Spirituality, Relationships" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.sinverguenzapodcast.com/" />
+    <meta property="og:title" content="Sin Vergüenza Podcast | Without Shame" />
+    <meta property="og:description" content="A space for honest, healing conversations about unlearning shame and coming home to yourself." />
+    <meta property="og:image" content="https://www.sinverguenzapodcast.com/sinlogo.jpeg" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://www.sinverguenzapodcast.com/" />
+    <meta property="twitter:title" content="Sin Vergüenza Podcast | Without Shame" />
+    <meta property="twitter:description" content="Join us for deep rooted conversations on mental health, relationships, and the immigrant experience." />
+    <meta property="twitter:image" content="https://www.sinverguenzapodcast.com/sinlogo.jpeg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastSeries",
+        "name": "Sin Vergüenza Podcast",
+        "url": "https://www.sinverguenzapodcast.com/",
+        "description": "A space created for honest, healing, and deep-rooted conversations about what it means to grow, unlearn, and come home to yourself. Focusing on mental health, inner child healing, and the unique experiences of first-generation families.",
+        "sameAs": [
+          "https://youtube.com/@sin.verguenzaa.podcast",
+          "https://www.instagram.com/sin.verguenza.podcast",
+          "https://open.spotify.com/show/66OKRdoQvBTGuylGZv9yP1?si=e49966e8dd2a4e3a"
+        ],
+        "image": "https://www.sinverguenzapodcast.com/cover-art.jpg",
+        "author": {
+          "@type": "Organization",
+          "name": "Sin Vergüenza"
+        },
+        "offers": [
+          {
+            "@type": "Offer",
+            "url": "https://open.spotify.com/show/66OKRdoQvBTGuylGZv9yP1?si=e49966e8dd2a4e3a",
+            "name": "Listen on Spotify"
+          },
+          {
+            "@type": "Offer",
+            "url": "https://youtube.com/@sin.verguenzaa.podcast",
+            "name": "Watch on YouTube"
+          }
+        ]
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VK07VHJKDM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VK07VHJKDM');
+    </script>
+  </head>
+  <body>
+    <div class="min-vh-100" style="background: var(--sv-gradient-bg)">
+      <Navigation client:load />
+      <Hero />
+      <About />
+      <Episodes />
+      <Hosts />
+      <Footer />
+    </div>
+  </body>
+</html>
