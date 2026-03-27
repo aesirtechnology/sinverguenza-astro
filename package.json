@@ -8,7 +8,9 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/node": "^8.3.3",
     "@astrojs/react": "^3.6.0",
+    "@azure/cosmos": "^4.9.2",
     "astro": "^4.16.0",
     "bootstrap": "^5.3.3",
     "react": "^18.3.1",
