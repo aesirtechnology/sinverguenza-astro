@@ -4,7 +4,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { createPost, getPostById, updatePost } from '../../lib/posts-api';
+import {
+  createPost,
+  getPostById,
+  triggerSiteRebuild,
+  updatePost,
+} from '../../lib/posts-api';
 import type { BlogPostDocument, BlogPostInput } from '../../lib/blog-types';
 import { parseTagInput, slugify } from '../../lib/blog-utils';
 
@@ -90,6 +95,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
   const [manualSlug, setManualSlug] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [post, setPost] = useState<BlogPostDocument | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const editor = useEditor({
     content: '<p></p>',
@@ -120,6 +126,33 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
       }));
     },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const saved = params.get('saved');
+    const rebuild = params.get('rebuild');
+
+    if (saved === 'published' && rebuild === 'success') {
+      setNotice(
+        'Post saved! Site rebuild triggered — changes will be live in 1-2 minutes.',
+      );
+    }
+
+    if (saved === 'published' && rebuild === 'failed') {
+      setNotice('Post saved successfully.');
+      setWarning(
+        'The post was saved, but the site rebuild could not be triggered automatically. Please trigger it manually from the dashboard.',
+      );
+    }
+
+    if (saved === 'draft') {
+      setNotice('Draft saved successfully.');
+    }
+
+    if (saved) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (mode !== 'edit' || !postId) {
@@ -267,11 +300,38 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     };
   }
 
+  function shouldTriggerRebuild(
+    previousPost: BlogPostDocument | null,
+    nextStatus: 'draft' | 'published',
+  ): boolean {
+    return nextStatus === 'published' || previousPost?.status === 'published';
+  }
+
+  async function triggerRebuildWithFeedback(): Promise<boolean> {
+    try {
+      await triggerSiteRebuild();
+      setNotice(
+        'Post saved! Site rebuild triggered — changes will be live in 1-2 minutes.',
+      );
+      setWarning(null);
+      return true;
+    } catch (triggerError) {
+      setNotice('Post saved successfully.');
+      setWarning(
+        triggerError instanceof Error
+          ? `${triggerError.message} Trigger a rebuild manually from the dashboard.`
+          : 'The post was saved, but the site rebuild could not be triggered automatically. Please trigger it manually from the dashboard.',
+      );
+      return false;
+    }
+  }
+
   async function savePost(status: 'draft' | 'published') {
     try {
       setIsSaving(true);
       setError(null);
       setNotice(null);
+      setWarning(null);
 
       const payload = buildPayload(status);
 
@@ -289,16 +349,29 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
         const updatedPost = await updatePost(post.slug, updatePayload);
         setPost(updatedPost);
         setForm(mapPostToForm(updatedPost));
-        setNotice(
-          status === 'published'
-            ? 'Post published successfully.'
-            : 'Draft saved successfully.',
-        );
+
+        if (shouldTriggerRebuild(post, updatedPost.status)) {
+          await triggerRebuildWithFeedback();
+        } else {
+          setNotice('Draft saved successfully.');
+        }
+
         return;
       }
 
       const createdPost = await createPost(payload);
-      window.location.assign(`/admin/posts/edit/${createdPost.id}`);
+
+      if (shouldTriggerRebuild(null, createdPost.status)) {
+        const rebuildTriggered = await triggerRebuildWithFeedback();
+        const rebuildState = rebuildTriggered ? 'success' : 'failed';
+
+        window.location.assign(
+          `/admin/posts/edit/${createdPost.id}?saved=published&rebuild=${rebuildState}`,
+        );
+        return;
+      }
+
+      window.location.assign(`/admin/posts/edit/${createdPost.id}?saved=draft`);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Unable to save post.',
@@ -333,6 +406,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
 
         {error ? <div className="admin-panel admin-panel--error">{error}</div> : null}
         {notice ? <div className="admin-panel admin-panel--success">{notice}</div> : null}
+        {warning ? <div className="admin-panel admin-panel--warning">{warning}</div> : null}
 
         <div className="admin-editor-layout">
           <div className="admin-editor-main">

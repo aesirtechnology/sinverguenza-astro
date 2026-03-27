@@ -5,6 +5,10 @@ interface ApiErrorPayload {
   error?: string;
 }
 
+interface RebuildResponse {
+  message: string;
+}
+
 async function requestJson<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -93,5 +97,11 @@ export async function updatePost(
 export async function deletePost(slug: string): Promise<void> {
   await requestJson<void>(`/api/posts/${encodeURIComponent(slug)}`, {
     method: 'DELETE',
+  });
+}
+
+export async function triggerSiteRebuild(): Promise<RebuildResponse> {
+  return requestJson<RebuildResponse>('/api/trigger-rebuild', {
+    method: 'POST',
   });
 }

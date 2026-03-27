@@ -167,6 +167,11 @@ body.admin-body {
   color: var(--admin-success);
 }
 
+.admin-panel--warning {
+  border-color: rgba(140, 98, 33, 0.28);
+  color: #8c6221;
+}
+
 .admin-panel__header {
   display: flex;
   align-items: center;

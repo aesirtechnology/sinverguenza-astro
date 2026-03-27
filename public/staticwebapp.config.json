@@ -17,6 +17,11 @@
       "route": "/api/posts/*",
       "methods": ["PUT", "DELETE"],
       "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/trigger-rebuild",
+      "methods": ["POST"],
+      "allowedRoles": ["authenticated"]
     }
   ],
   "responseOverrides": {

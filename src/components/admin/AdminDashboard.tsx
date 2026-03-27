@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAllPosts } from '../../lib/posts-api';
+import { getAllPosts, triggerSiteRebuild } from '../../lib/posts-api';
 import type { BlogPostDocument } from '../../lib/blog-types';
 
 interface DashboardState {
@@ -13,6 +13,9 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rebuildNotice, setRebuildNotice] = useState<string | null>(null);
+  const [rebuildWarning, setRebuildWarning] = useState<string | null>(null);
+  const [triggeringRebuild, setTriggeringRebuild] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +61,26 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  async function handleRebuildTrigger() {
+    try {
+      setTriggeringRebuild(true);
+      setRebuildNotice(null);
+      setRebuildWarning(null);
+      await triggerSiteRebuild();
+      setRebuildNotice(
+        'Site rebuild triggered — changes should be live in 1-2 minutes.',
+      );
+    } catch (triggerError) {
+      setRebuildWarning(
+        triggerError instanceof Error
+          ? triggerError.message
+          : 'Unable to trigger a rebuild right now.',
+      );
+    } finally {
+      setTriggeringRebuild(false);
+    }
+  }
+
   if (loading) {
     return <div className="admin-panel">Loading dashboard…</div>;
   }
@@ -89,11 +112,33 @@ export default function AdminDashboard() {
 
       <section className="admin-panel">
         <div className="admin-panel__header">
-          <h2>Recently Updated</h2>
-          <a className="admin-link" href="/admin/posts">
-            View all posts
-          </a>
+          <div>
+            <h2>Recently Updated</h2>
+            <p className="admin-panel__subcopy">
+              Force a rebuild if you need the public site to refresh immediately.
+            </p>
+          </div>
+          <div className="admin-table__actions">
+            <button
+              className="admin-button"
+              disabled={triggeringRebuild}
+              onClick={() => void handleRebuildTrigger()}
+              type="button"
+            >
+              {triggeringRebuild ? 'Triggering…' : 'Trigger Rebuild'}
+            </button>
+            <a className="admin-link" href="/admin/posts">
+              View all posts
+            </a>
+          </div>
         </div>
+
+        {rebuildNotice ? (
+          <div className="admin-panel admin-panel--success">{rebuildNotice}</div>
+        ) : null}
+        {rebuildWarning ? (
+          <div className="admin-panel admin-panel--warning">{rebuildWarning}</div>
+        ) : null}
 
         {data.recentPosts.length === 0 ? (
           <p className="admin-empty-state">No posts yet. Start your first draft.</p>

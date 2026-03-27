@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly COSMOS_KEY: string;
   readonly ADMIN_EMAILS?: string;
   readonly AUTH_DISABLED?: string;
+  readonly GH_PAT?: string;
 }
 
 interface ImportMeta {
