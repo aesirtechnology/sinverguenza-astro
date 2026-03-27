@@ -1,0 +1,73 @@
+---
+import '../styles/admin.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Admin' } = Astro.props;
+const pathname = Astro.url.pathname;
+const adminUser = Astro.locals.adminUser;
+const authDisabled = Astro.locals.authDisabled;
+
+const navItems = [
+  { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/posts', label: 'All Posts' },
+  { href: '/admin/posts/new', label: 'Create New Post' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} | Sin Vergüenza Admin</title>
+  </head>
+  <body class="admin-body">
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div>
+          <a class="admin-brand" href="/admin">Sin Vergüenza Admin</a>
+          <p class="admin-sidebar__meta">
+            {authDisabled ? 'Local auth bypass is enabled.' : adminUser?.email}
+          </p>
+        </div>
+
+        <nav class="admin-nav" aria-label="Admin navigation">
+          {navItems.map((item) => (
+            <a
+              class:list={[
+                'admin-nav__link',
+                pathname === item.href ? 'is-active' : '',
+              ]}
+              href={item.href}
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <a
+          class="admin-nav__link admin-nav__logout"
+          href={authDisabled ? '/admin' : '/.auth/logout?post_logout_redirect_uri=/'}
+        >
+          Logout
+        </a>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-main__header">
+          <div>
+            <p class="admin-eyebrow">Blog Admin</p>
+            <h1>{title}</h1>
+          </div>
+        </header>
+
+        <section class="admin-main__content">
+          <slot />
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

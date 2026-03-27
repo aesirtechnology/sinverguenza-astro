@@ -1,0 +1,10 @@
+---
+import PostsList from '../../../components/admin/PostsList';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+export const prerender = false;
+---
+
+<AdminLayout title="All Posts">
+  <PostsList client:load />
+</AdminLayout>

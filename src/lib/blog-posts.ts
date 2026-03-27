@@ -1,14 +1,13 @@
-import type { BlogPostDocument, BlogPostStatus } from "./cosmos";
+import type {
+  BlogPostDocument,
+  BlogPostInput,
+  BlogPostStatus,
+} from "./blog-types";
 import { ApiError } from "./api";
 
 const BLOG_POST_STATUSES = new Set<BlogPostStatus>(["draft", "published"]);
 
-type MutableBlogPostFields = Omit<
-  BlogPostDocument,
-  "id" | "createdAt" | "updatedAt"
->;
-
-export type CreateBlogPostInput = MutableBlogPostFields;
+export type CreateBlogPostInput = BlogPostInput;
 
 export type UpdateBlogPostInput = Partial<CreateBlogPostInput>;
 

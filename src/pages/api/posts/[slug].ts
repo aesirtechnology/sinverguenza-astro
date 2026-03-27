@@ -1,11 +1,13 @@
 import type { APIRoute } from "astro";
 import { ApiError, handleApiError, jsonResponse } from "../../../lib/api";
+import { requireAdminRequest } from "../../../lib/auth";
 import {
   applyBlogPostUpdate,
   parseRequestJson,
   parseUpdateBlogPostInput,
 } from "../../../lib/blog-posts";
-import { getPostsContainer, type BlogPostDocument } from "../../../lib/cosmos";
+import { getPostsContainer } from "../../../lib/cosmos";
+import type { BlogPostDocument } from "../../../lib/blog-types";
 
 export const prerender = false;
 
@@ -58,6 +60,8 @@ export const GET: APIRoute = async ({ params }) => {
 
 export const PUT: APIRoute = async ({ params, request }) => {
   try {
+    requireAdminRequest(request);
+
     const slug = requireSlug(params.slug);
     const existingPost = await findPostBySlug(slug);
 
@@ -91,8 +95,9 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
   try {
+    requireAdminRequest(request);
     const slug = requireSlug(params.slug);
     const existingPost = await findPostBySlug(slug);
 

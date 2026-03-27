@@ -1,0 +1,596 @@
+import { useEffect, useMemo, useState } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Placeholder from '@tiptap/extension-placeholder';
+import { createPost, getPostById, updatePost } from '../../lib/posts-api';
+import type { BlogPostDocument, BlogPostInput } from '../../lib/blog-types';
+import { parseTagInput, slugify } from '../../lib/blog-utils';
+
+interface PostEditorProps {
+  mode: 'create' | 'edit';
+  postId?: string;
+}
+
+interface PostFormState {
+  author: string;
+  body: string;
+  excerpt: string;
+  featuredImage: string;
+  ogImage: string;
+  publishedAt: string;
+  seoDescription: string;
+  seoTitle: string;
+  slug: string;
+  tagsInput: string;
+  title: string;
+}
+
+const EMPTY_FORM: PostFormState = {
+  author: '',
+  body: '',
+  excerpt: '',
+  featuredImage: '',
+  ogImage: '',
+  publishedAt: '',
+  seoDescription: '',
+  seoTitle: '',
+  slug: '',
+  tagsInput: '',
+  title: '',
+};
+
+function mapPostToForm(post: BlogPostDocument): PostFormState {
+  return {
+    author: post.author,
+    body: post.body,
+    excerpt: post.excerpt,
+    featuredImage: post.featuredImage,
+    ogImage: post.ogImage,
+    publishedAt: post.publishedAt,
+    seoDescription: post.seoDescription,
+    seoTitle: post.seoTitle,
+    slug: post.slug,
+    tagsInput: post.tags.join(', '),
+    title: post.title,
+  };
+}
+
+function formatDateTimeLocal(value: string): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function parseDateTimeLocal(value: string): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
+export default function PostEditor({ mode, postId }: PostEditorProps) {
+  const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(mode === 'edit');
+  const [isSaving, setIsSaving] = useState(false);
+  const [manualSlug, setManualSlug] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [post, setPost] = useState<BlogPostDocument | null>(null);
+
+  const editor = useEditor({
+    content: '<p></p>',
+    editorProps: {
+      attributes: {
+        class: 'admin-editor__content',
+      },
+    },
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [2, 3, 4],
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+      }),
+      Image,
+      Placeholder.configure({
+        placeholder: 'Write your post here…',
+      }),
+    ],
+    immediatelyRender: false,
+    onUpdate({ editor: currentEditor }) {
+      setForm((currentForm) => ({
+        ...currentForm,
+        body: currentEditor.getHTML(),
+      }));
+    },
+  });
+
+  useEffect(() => {
+    if (mode !== 'edit' || !postId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPost() {
+      try {
+        setIsLoading(true);
+        const existingPost = await getPostById(postId);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!existingPost) {
+          throw new Error('Post not found.');
+        }
+
+        setPost(existingPost);
+        setForm(mapPostToForm(existingPost));
+        setManualSlug(true);
+        setError(null);
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'Unable to load this post.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadPost();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, postId]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const nextContent = form.body || '<p></p>';
+
+    if (editor.getHTML() !== nextContent) {
+      editor.commands.setContent(nextContent, { emitUpdate: false });
+    }
+  }, [editor, form.body]);
+
+  const currentStatus = useMemo(
+    () => post?.status ?? 'draft',
+    [post?.status],
+  );
+
+  function updateForm<K extends keyof PostFormState>(
+    key: K,
+    value: PostFormState[K],
+  ) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      [key]: value,
+    }));
+  }
+
+  function handleTitleChange(value: string) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      title: value,
+      slug: manualSlug ? currentForm.slug : slugify(value),
+    }));
+  }
+
+  function handleSlugModeChange(enabled: boolean) {
+    if (mode === 'edit') {
+      return;
+    }
+
+    setManualSlug(enabled);
+
+    if (!enabled) {
+      setForm((currentForm) => ({
+        ...currentForm,
+        slug: slugify(currentForm.title),
+      }));
+    }
+  }
+
+  function runPromptAction(type: 'image' | 'link') {
+    if (!editor) {
+      return;
+    }
+
+    if (type === 'image') {
+      const imageUrl = window.prompt('Paste an image URL');
+      if (imageUrl) {
+        editor.chain().focus().setImage({ src: imageUrl }).run();
+      }
+      return;
+    }
+
+    const previousUrl = editor.getAttributes('link').href as string | undefined;
+    const nextUrl = window.prompt('Paste a link URL', previousUrl ?? '');
+
+    if (nextUrl === null) {
+      return;
+    }
+
+    if (!nextUrl) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: nextUrl }).run();
+  }
+
+  function buildPayload(status: 'draft' | 'published'): BlogPostInput {
+    const normalizedPublishedAt =
+      status === 'published'
+        ? form.publishedAt || post?.publishedAt || new Date().toISOString()
+        : form.publishedAt;
+
+    return {
+      author: form.author.trim(),
+      body: form.body,
+      excerpt: form.excerpt.trim(),
+      featuredImage: form.featuredImage.trim(),
+      ogImage: form.ogImage.trim(),
+      publishedAt: normalizedPublishedAt,
+      seoDescription: form.seoDescription.trim(),
+      seoTitle: form.seoTitle.trim(),
+      slug: form.slug.trim(),
+      status,
+      tags: parseTagInput(form.tagsInput),
+      title: form.title.trim(),
+    };
+  }
+
+  async function savePost(status: 'draft' | 'published') {
+    try {
+      setIsSaving(true);
+      setError(null);
+      setNotice(null);
+
+      const payload = buildPayload(status);
+
+      if (!payload.title || !payload.slug || !payload.author) {
+        throw new Error('Title, slug, and author are required.');
+      }
+
+      if (mode === 'edit' && post) {
+        const updatePayload: Partial<BlogPostInput> = { ...payload };
+
+        if (!updatePayload.publishedAt) {
+          delete updatePayload.publishedAt;
+        }
+
+        const updatedPost = await updatePost(post.slug, updatePayload);
+        setPost(updatedPost);
+        setForm(mapPostToForm(updatedPost));
+        setNotice(
+          status === 'published'
+            ? 'Post published successfully.'
+            : 'Draft saved successfully.',
+        );
+        return;
+      }
+
+      const createdPost = await createPost(payload);
+      window.location.assign(`/admin/posts/edit/${createdPost.id}`);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error ? saveError.message : 'Unable to save post.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="admin-panel">Loading post editor…</div>;
+  }
+
+  if (error && mode === 'edit' && !post) {
+    return <div className="admin-panel admin-panel--error">{error}</div>;
+  }
+
+  return (
+    <div className="admin-stack">
+      <section className="admin-panel">
+        <div className="admin-panel__header">
+          <div>
+            <h2>{mode === 'create' ? 'New Post' : 'Edit Post'}</h2>
+            <p className="admin-panel__subcopy">
+              Draft freely, then publish when the story is ready.
+            </p>
+          </div>
+          <span className={`admin-badge admin-badge--${currentStatus}`}>
+            {currentStatus}
+          </span>
+        </div>
+
+        {error ? <div className="admin-panel admin-panel--error">{error}</div> : null}
+        {notice ? <div className="admin-panel admin-panel--success">{notice}</div> : null}
+
+        <div className="admin-editor-layout">
+          <div className="admin-editor-main">
+            <label className="admin-field">
+              <span>Title</span>
+              <input
+                className="admin-input"
+                onChange={(event) => handleTitleChange(event.target.value)}
+                placeholder="Your post title"
+                type="text"
+                value={form.title}
+              />
+            </label>
+
+            <div className="admin-slug-row">
+              <label className="admin-field">
+                <span>Slug</span>
+                <input
+                  className="admin-input"
+                  disabled={mode === 'edit' || !manualSlug}
+                  onChange={(event) => updateForm('slug', slugify(event.target.value))}
+                  placeholder="post-slug"
+                  type="text"
+                  value={form.slug}
+                />
+              </label>
+
+              {mode === 'create' ? (
+                <label className="admin-checkbox">
+                  <input
+                    checked={manualSlug}
+                    onChange={(event) => handleSlugModeChange(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>Manual override</span>
+                </label>
+              ) : (
+                <p className="admin-field-note">
+                  Slug is locked after creation because it is the Cosmos partition key.
+                </p>
+              )}
+            </div>
+
+            <label className="admin-field">
+              <span>Author</span>
+              <input
+                className="admin-input"
+                onChange={(event) => updateForm('author', event.target.value)}
+                placeholder="Author name"
+                type="text"
+                value={form.author}
+              />
+            </label>
+
+            <div className="admin-editor">
+              <div className="admin-editor__toolbar">
+                <button
+                  className={editor?.isActive('bold') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                  type="button"
+                >
+                  Bold
+                </button>
+                <button
+                  className={editor?.isActive('italic') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                  type="button"
+                >
+                  Italic
+                </button>
+                <button
+                  className={editor?.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({ level: 2 }).run()
+                  }
+                  type="button"
+                >
+                  H2
+                </button>
+                <button
+                  className={editor?.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({ level: 3 }).run()
+                  }
+                  type="button"
+                >
+                  H3
+                </button>
+                <button
+                  className={editor?.isActive('heading', { level: 4 }) ? 'is-active' : ''}
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({ level: 4 }).run()
+                  }
+                  type="button"
+                >
+                  H4
+                </button>
+                <button
+                  className={editor?.isActive('bulletList') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                  type="button"
+                >
+                  Bullets
+                </button>
+                <button
+                  className={editor?.isActive('orderedList') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                  type="button"
+                >
+                  Numbered
+                </button>
+                <button
+                  className={editor?.isActive('blockquote') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+                  type="button"
+                >
+                  Quote
+                </button>
+                <button
+                  className={editor?.isActive('codeBlock') ? 'is-active' : ''}
+                  onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+                  type="button"
+                >
+                  Code
+                </button>
+                <button onClick={() => runPromptAction('link')} type="button">
+                  Link
+                </button>
+                <button onClick={() => runPromptAction('image')} type="button">
+                  Image
+                </button>
+                <button
+                  disabled={!editor?.can().undo()}
+                  onClick={() => editor?.chain().focus().undo().run()}
+                  type="button"
+                >
+                  Undo
+                </button>
+                <button
+                  disabled={!editor?.can().redo()}
+                  onClick={() => editor?.chain().focus().redo().run()}
+                  type="button"
+                >
+                  Redo
+                </button>
+              </div>
+
+              <EditorContent editor={editor} />
+            </div>
+          </div>
+
+          <aside className="admin-editor-sidebar">
+            <div className="admin-sidebar-section">
+              <h3>Publishing</h3>
+
+              <label className="admin-field">
+                <span>Published At</span>
+                <input
+                  className="admin-input"
+                  onChange={(event) =>
+                    updateForm('publishedAt', parseDateTimeLocal(event.target.value))
+                  }
+                  type="datetime-local"
+                  value={formatDateTimeLocal(form.publishedAt)}
+                />
+              </label>
+            </div>
+
+            <div className="admin-sidebar-section">
+              <h3>SEO & Metadata</h3>
+
+              <label className="admin-field">
+                <span>SEO Title</span>
+                <input
+                  className="admin-input"
+                  onChange={(event) => updateForm('seoTitle', event.target.value)}
+                  type="text"
+                  value={form.seoTitle}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>SEO Description</span>
+                <textarea
+                  className="admin-input admin-textarea"
+                  onChange={(event) =>
+                    updateForm('seoDescription', event.target.value)
+                  }
+                  rows={4}
+                  value={form.seoDescription}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Excerpt</span>
+                <textarea
+                  className="admin-input admin-textarea"
+                  onChange={(event) => updateForm('excerpt', event.target.value)}
+                  rows={4}
+                  value={form.excerpt}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Tags</span>
+                <input
+                  className="admin-input"
+                  onChange={(event) => updateForm('tagsInput', event.target.value)}
+                  placeholder="healing, first-gen, relationships"
+                  type="text"
+                  value={form.tagsInput}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Featured Image URL</span>
+                <input
+                  className="admin-input"
+                  onChange={(event) =>
+                    updateForm('featuredImage', event.target.value)
+                  }
+                  type="url"
+                  value={form.featuredImage}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>OG Image URL</span>
+                <input
+                  className="admin-input"
+                  onChange={(event) => updateForm('ogImage', event.target.value)}
+                  type="url"
+                  value={form.ogImage}
+                />
+              </label>
+            </div>
+          </aside>
+        </div>
+
+        <div className="admin-actions">
+          <button
+            className="admin-button"
+            disabled={isSaving}
+            onClick={() => void savePost('draft')}
+            type="button"
+          >
+            {isSaving ? 'Saving…' : 'Save as Draft'}
+          </button>
+          <button
+            className="admin-button admin-button--primary"
+            disabled={isSaving}
+            onClick={() => void savePost('published')}
+            type="button"
+          >
+            {isSaving ? 'Saving…' : 'Publish'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}

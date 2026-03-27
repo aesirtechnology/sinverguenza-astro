@@ -1,0 +1,10 @@
+---
+import PostEditor from '../../../components/admin/PostEditor';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+export const prerender = false;
+---
+
+<AdminLayout title="Create New Post">
+  <PostEditor client:load mode="create" />
+</AdminLayout>

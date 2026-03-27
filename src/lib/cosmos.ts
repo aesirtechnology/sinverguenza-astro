@@ -1,24 +1,5 @@
 import { CosmosClient, type Container } from "@azure/cosmos";
-
-export type BlogPostStatus = "draft" | "published";
-
-export interface BlogPostDocument {
-  id: string;
-  title: string;
-  slug: string;
-  body: string;
-  excerpt: string;
-  author: string;
-  tags: string[];
-  featuredImage: string;
-  seoTitle: string;
-  seoDescription: string;
-  ogImage: string;
-  status: BlogPostStatus;
-  publishedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { BlogPostDocument, BlogPostStatus } from "./blog-types";
 
 const DATABASE_ID = "sinverguenza-blog";
 const POSTS_CONTAINER_ID = "posts";

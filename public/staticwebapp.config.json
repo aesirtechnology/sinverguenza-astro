@@ -1,0 +1,28 @@
+{
+  "routes": [
+    {
+      "route": "/admin*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/posts/drafts",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/posts",
+      "methods": ["POST"],
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/posts/*",
+      "methods": ["PUT", "DELETE"],
+      "allowedRoles": ["authenticated"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "statusCode": 302,
+      "redirect": "/.auth/login/aad"
+    }
+  }
+}

@@ -1,11 +1,15 @@
 import type { APIRoute } from "astro";
 import { handleApiError, jsonResponse } from "../../../lib/api";
-import { getPostsContainer, type BlogPostDocument } from "../../../lib/cosmos";
+import { requireAdminRequest } from "../../../lib/auth";
+import { getPostsContainer } from "../../../lib/cosmos";
+import type { BlogPostDocument } from "../../../lib/blog-types";
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
   try {
+    requireAdminRequest(request);
+
     const container = getPostsContainer();
     const { resources } = await container.items
       .query<BlogPostDocument>({
