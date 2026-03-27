@@ -4,7 +4,7 @@ function Navigation() {
   return (
     <Navbar expand="lg" className="py-3">
       <Container>
-        <Navbar.Brand href="#home" className="d-flex align-items-center gap-2">
+        <Navbar.Brand href="/" className="d-flex align-items-center gap-2">
           
           <Image src="/sinlogo.jpeg" roundedCircle width={50} height={50} />
           <span className="display-text" style={{ fontSize: '24px' }}>Sin Vergüenza</span>
@@ -14,9 +14,10 @@ function Navigation() {
         
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center gap-4">
-            <Nav.Link href="#episodes">Episodes</Nav.Link>
-            <Nav.Link href="#about">About</Nav.Link>
-            <Nav.Link href="#hosts">Hosts</Nav.Link>
+            <Nav.Link href="/blog">Blog</Nav.Link>
+            <Nav.Link href="/#episodes">Episodes</Nav.Link>
+            <Nav.Link href="/#about">About</Nav.Link>
+            <Nav.Link href="/#hosts">Hosts</Nav.Link>
             <Button 
               href="https://www.youtube.com/@sin.verguenzaa.podcast?sub_confirmation=1"
               target='_blank'

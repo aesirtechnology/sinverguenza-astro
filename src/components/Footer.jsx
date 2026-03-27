@@ -1,5 +1,5 @@
 import { Container, Stack } from 'react-bootstrap'
-import { FaSpotify, FaInstagram, FaTiktok, FaEnvelope, FaYoutube } from 'react-icons/fa'
+import { FaSpotify, FaInstagram, FaYoutube } from 'react-icons/fa'
 
 function Footer() {
   const socialLinks = [

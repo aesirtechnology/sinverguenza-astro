@@ -1,0 +1,33 @@
+---
+import BlogArchive from '../../../components/blog/BlogArchive.astro';
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import { getPostsByTag, getUniqueTags } from '../../../lib/public-blog';
+
+export async function getStaticPaths() {
+  const tags = await getUniqueTags();
+
+  return tags.map((tag) => ({
+    params: { tag },
+    props: { tag },
+  }));
+}
+
+const { tag } = Astro.props;
+const posts = await getPostsByTag(tag);
+const decodedTag = decodeURIComponent(tag);
+const title = `${decodedTag} | Sin Vergüenza Blog`;
+const description = `Browse blog posts tagged "${decodedTag}" from Sin Vergüenza.`;
+---
+
+<SiteLayout
+  canonicalPath={`/blog/tag/${encodeURIComponent(decodedTag)}`}
+  description={description}
+  title={title}
+>
+  <BlogArchive
+    description={`Stories, reflections, and resources filed under ${decodedTag}.`}
+    emptyMessage={`There are no published posts tagged "${decodedTag}" yet.`}
+    posts={posts}
+    title={`Tag: ${decodedTag}`}
+  />
+</SiteLayout>

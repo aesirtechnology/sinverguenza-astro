@@ -1,0 +1,48 @@
+---
+interface Props {
+  canonicalPath?: string;
+  description: string;
+  image?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  title: string;
+  type?: 'article' | 'website';
+}
+
+const {
+  canonicalPath = Astro.url.pathname,
+  description,
+  image,
+  structuredData,
+  title,
+  type = 'website',
+} = Astro.props;
+
+const siteUrl = Astro.site ?? new URL('https://sinverguenzapodcast.com');
+const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
+const defaultImage = new URL('/sinlogo.jpeg', siteUrl).toString();
+const resolvedImage = image
+  ? new URL(image, siteUrl).toString()
+  : defaultImage;
+const jsonLd = structuredData
+  ? JSON.stringify(structuredData)
+  : undefined;
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalUrl} />
+
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={resolvedImage} />
+<meta property="og:url" content={canonicalUrl} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={resolvedImage} />
+
+{jsonLd ? (
+  <script type="application/ld+json" set:html={jsonLd} />
+) : null}

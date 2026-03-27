@@ -1,0 +1,168 @@
+---
+import BlogArchive from '../../components/blog/BlogArchive.astro';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import {
+  getPublishedPosts,
+  getPostsPerPage,
+  paginatePosts,
+} from '../../lib/public-blog';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  const totalPages = Math.ceil(posts.length / getPostsPerPage());
+  const paginationPaths = Array.from({ length: Math.max(totalPages - 1, 0) }, (_, index) => {
+    const page = index + 2;
+
+    return {
+      params: { entry: String(page) },
+      props: { currentPage: page, kind: 'archive' as const },
+    };
+  });
+
+  const postPaths = posts.map((post, index) => {
+    if (/^\d+$/.test(post.slug)) {
+      throw new Error(
+        `Published post slug "${post.slug}" conflicts with /blog/:page pagination.`,
+      );
+    }
+
+    return {
+      params: { entry: post.slug },
+      props: {
+        kind: 'post' as const,
+        nextPost: posts[index + 1] ?? null,
+        post,
+        previousPost: posts[index - 1] ?? null,
+      },
+    };
+  });
+
+  return [...paginationPaths, ...postPaths];
+}
+
+const { currentPage, kind, nextPost, post, previousPost } = Astro.props;
+const allPosts = kind === 'archive' ? await getPublishedPosts() : [];
+const page = kind === 'archive' ? paginatePosts(allPosts, currentPage) : null;
+const title =
+  kind === 'archive'
+    ? `Sin Vergüenza Blog | Page ${page.currentPage}`
+    : post.seoTitle || `${post.title} | Sin Vergüenza Blog`;
+const description =
+  kind === 'archive'
+    ? `Browse page ${page.currentPage} of the Sin Vergüenza blog.`
+    : post.seoDescription || post.excerpt;
+const canonicalPath =
+  kind === 'archive' ? `/blog/${page.currentPage}` : `/blog/${post.slug}`;
+const image =
+  kind === 'archive'
+    ? '/sinlogo.jpeg'
+    : post.ogImage || post.featuredImage || '/sinlogo.jpeg';
+const publishedDate =
+  kind === 'post'
+    ? new Date(post.publishedAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
+const structuredData =
+  kind === 'post'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        author: {
+          '@type': 'Person',
+          name: post.author,
+        },
+        dateModified: post.updatedAt,
+        datePublished: post.publishedAt,
+        description,
+        headline: post.title,
+        image: [new URL(image, Astro.site).toString()],
+        url: new URL(canonicalPath, Astro.site).toString(),
+      }
+    : undefined;
+---
+
+<SiteLayout
+  canonicalPath={canonicalPath}
+  description={description}
+  image={image}
+  structuredData={structuredData}
+  title={title}
+  type={kind === 'post' ? 'article' : 'website'}
+>
+  {kind === 'archive' && page ? (
+    <BlogArchive
+      currentPage={page.currentPage}
+      description={`Page ${page.currentPage} of reflections and resources on healing, growth, and the first-gen experience.`}
+      posts={page.posts}
+      title="Blog Archive"
+      totalPages={page.totalPages}
+    />
+  ) : null}
+
+  {kind === 'post' ? (
+    <>
+      <section class="blog-post">
+        <div class="container">
+          <div class="blog-post__shell">
+            <a class="blog-back-link" href="/blog">← Back to the blog</a>
+
+            <div>
+              <div class="blog-post__meta">
+                <span>{post.author}</span>
+                <span aria-hidden="true">•</span>
+                <time datetime={post.publishedAt}>{publishedDate}</time>
+              </div>
+              <h1 class="blog-post__title">{post.title}</h1>
+              <p class="blog-post__lead">{post.excerpt}</p>
+            </div>
+
+            <div class="blog-tag-list">
+              {post.tags.map((tag) => (
+                <a class="blog-tag" href={`/blog/tag/${encodeURIComponent(tag)}`}>
+                  {tag}
+                </a>
+              ))}
+            </div>
+
+            {post.featuredImage ? (
+              <div class="blog-post__cover">
+                <img src={post.featuredImage} alt={post.title} />
+              </div>
+            ) : null}
+
+            <article class="blog-post__prose" set:html={post.body} />
+          </div>
+        </div>
+      </section>
+
+      {(previousPost || nextPost) ? (
+        <section class="blog-post-nav">
+          <div class="container">
+            <div class="blog-post-nav__grid">
+              {previousPost ? (
+                <a class="blog-post-nav__item" href={`/blog/${previousPost.slug}`}>
+                  <span class="blog-post-nav__label">Newer Post</span>
+                  <h2>{previousPost.title}</h2>
+                </a>
+              ) : (
+                <div />
+              )}
+
+              {nextPost ? (
+                <a class="blog-post-nav__item" href={`/blog/${nextPost.slug}`}>
+                  <span class="blog-post-nav__label">Older Post</span>
+                  <h2>{nextPost.title}</h2>
+                </a>
+              ) : (
+                <div />
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
+    </>
+  ) : null}
+</SiteLayout>

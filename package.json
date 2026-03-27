@@ -10,6 +10,8 @@
   "dependencies": {
     "@astrojs/node": "^8.3.3",
     "@astrojs/react": "^3.6.0",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.2.1",
     "@azure/cosmos": "^4.9.2",
     "@tiptap/extension-image": "^3.21.0",
     "@tiptap/extension-link": "^3.21.0",

@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 
 async function resolveAdapter() {
   try {
@@ -12,10 +13,11 @@ async function resolveAdapter() {
 }
 
 export default defineConfig({
-  site: 'https://www.sinverguenzapodcast.com',
+  site: 'https://sinverguenzapodcast.com',
   output: 'hybrid',
   adapter: await resolveAdapter(),
   integrations: [
     react(),
+    sitemap(),
   ],
 });

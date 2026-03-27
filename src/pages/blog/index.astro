@@ -1,0 +1,34 @@
+---
+import BlogArchive from '../../components/blog/BlogArchive.astro';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { getPublishedPosts, paginatePosts } from '../../lib/public-blog';
+
+const allPosts = await getPublishedPosts();
+const { currentPage, posts, totalPages } = paginatePosts(allPosts, 1);
+
+const title = 'Sin Vergüenza Blog | Healing, Growth, and First-Gen Stories';
+const description =
+  'Read reflections and stories from Sin Vergüenza on healing, growth, relationships, and the first-gen experience.';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  description,
+  name: 'Sin Vergüenza Blog',
+  url: new URL('/blog', Astro.site).toString(),
+};
+---
+
+<SiteLayout
+  canonicalPath="/blog"
+  description={description}
+  structuredData={structuredData}
+  title={title}
+>
+  <BlogArchive
+    currentPage={currentPage}
+    description="Essays, reflections, and resources on healing without shame."
+    posts={posts}
+    title="The Blog"
+    totalPages={totalPages}
+  />
+</SiteLayout>

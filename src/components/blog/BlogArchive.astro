@@ -1,0 +1,52 @@
+---
+import BlogCard from './BlogCard.astro';
+import BlogPagination from './BlogPagination.astro';
+import type { BlogPostDocument } from '../../lib/blog-types';
+
+interface Props {
+  currentPage?: number;
+  description: string;
+  emptyMessage?: string;
+  posts: BlogPostDocument[];
+  title: string;
+  totalPages?: number;
+}
+
+const {
+  currentPage = 1,
+  description,
+  emptyMessage = 'No posts found yet.',
+  posts,
+  title,
+  totalPages = 1,
+} = Astro.props;
+---
+
+<section class="blog-hero">
+  <div class="container">
+    <div class="blog-hero__inner">
+      <p class="blog-hero__eyebrow">Sin Vergüenza Blog</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
+    </div>
+  </div>
+</section>
+
+<section class="blog-archive">
+  <div class="container">
+    {posts.length > 0 ? (
+      <div class="blog-grid">
+        {posts.map((post) => (
+          <BlogCard post={post} />
+        ))}
+      </div>
+    ) : (
+      <div class="blog-empty-state">
+        <h2>Nothing here yet</h2>
+        <p>{emptyMessage}</p>
+      </div>
+    )}
+
+    <BlogPagination currentPage={currentPage} totalPages={totalPages} />
+  </div>
+</section>

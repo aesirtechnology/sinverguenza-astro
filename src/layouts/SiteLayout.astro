@@ -1,0 +1,67 @@
+---
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '../styles/index.css';
+import '../styles/blog.css';
+import Footer from '../components/Footer';
+import Navigation from '../components/Navigation';
+import SEOHead from '../components/SEOHead.astro';
+
+interface Props {
+  canonicalPath?: string;
+  description: string;
+  image?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  title: string;
+  type?: 'article' | 'website';
+}
+
+const {
+  canonicalPath,
+  description,
+  image,
+  structuredData,
+  title,
+  type = 'website',
+} = Astro.props;
+
+const siteUrl = Astro.site ?? new URL('https://sinverguenzapodcast.com');
+const rssUrl = new URL('/rss.xml', siteUrl).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/jpeg" href="/sinlogo.jpeg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <SEOHead
+      canonicalPath={canonicalPath}
+      description={description}
+      image={image}
+      structuredData={structuredData}
+      title={title}
+      type={type}
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Sin Vergüenza Blog RSS"
+      href={rssUrl}
+    />
+  </head>
+  <body>
+    <div class="min-vh-100 blog-site-shell">
+      <Navigation client:load />
+      <main>
+        <slot />
+      </main>
+      <Footer />
+    </div>
+  </body>
+</html>
