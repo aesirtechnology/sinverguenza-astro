@@ -7,8 +7,6 @@ interface Props {
 
 const { title = 'Admin' } = Astro.props;
 const pathname = Astro.url.pathname;
-const adminUser = Astro.locals.adminUser;
-const authDisabled = Astro.locals.authDisabled;
 
 const navItems = [
   { href: '/admin', label: 'Dashboard' },
@@ -30,7 +28,7 @@ const navItems = [
         <div>
           <a class="admin-brand" href="/admin">Sin Vergüenza Admin</a>
           <p class="admin-sidebar__meta">
-            {authDisabled ? 'Local auth bypass is enabled.' : adminUser?.email}
+            Manage posts, publish updates, and trigger rebuilds.
           </p>
         </div>
 
@@ -50,7 +48,7 @@ const navItems = [
 
         <a
           class="admin-nav__link admin-nav__logout"
-          href={authDisabled ? '/admin' : '/.auth/logout?post_logout_redirect_uri=/'}
+          href="/.auth/logout?post_logout_redirect_uri=/"
         >
           Logout
         </a>

@@ -147,7 +147,10 @@ export default function AdminDashboard() {
             {data.recentPosts.map((post) => (
               <article className="admin-list__item" key={post.id}>
                 <div>
-                  <a className="admin-list__title" href={`/admin/posts/edit/${post.id}`}>
+                  <a
+                    className="admin-list__title"
+                    href={`/admin/posts/edit?id=${encodeURIComponent(post.id)}`}
+                  >
                     {post.title}
                   </a>
                   <p className="admin-list__meta">

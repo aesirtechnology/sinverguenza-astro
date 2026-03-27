@@ -122,7 +122,7 @@ export default function PostsList() {
                     <div className="admin-table__actions">
                       <a
                         className="admin-button"
-                        href={`/admin/posts/edit/${post.id}`}
+                        href={`/admin/posts/edit?id=${encodeURIComponent(post.id)}`}
                       >
                         Edit
                       </a>

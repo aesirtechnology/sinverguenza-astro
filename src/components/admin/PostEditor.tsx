@@ -155,7 +155,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
   }, []);
 
   useEffect(() => {
-    if (mode !== 'edit' || !postId) {
+    if (mode !== 'edit') {
       return;
     }
 
@@ -164,7 +164,16 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     async function loadPost() {
       try {
         setIsLoading(true);
-        const existingPost = await getPostById(postId);
+        const resolvedPostId =
+          postId ??
+          new URLSearchParams(window.location.search).get('id') ??
+          undefined;
+
+        if (!resolvedPostId) {
+          throw new Error('A post ID is required to edit a post.');
+        }
+
+        const existingPost = await getPostById(resolvedPostId);
 
         if (cancelled) {
           return;
@@ -366,12 +375,14 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
         const rebuildState = rebuildTriggered ? 'success' : 'failed';
 
         window.location.assign(
-          `/admin/posts/edit/${createdPost.id}?saved=published&rebuild=${rebuildState}`,
+          `/admin/posts/edit?id=${encodeURIComponent(createdPost.id)}&saved=published&rebuild=${rebuildState}`,
         );
         return;
       }
 
-      window.location.assign(`/admin/posts/edit/${createdPost.id}?saved=draft`);
+      window.location.assign(
+        `/admin/posts/edit?id=${encodeURIComponent(createdPost.id)}&saved=draft`,
+      );
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Unable to save post.',
