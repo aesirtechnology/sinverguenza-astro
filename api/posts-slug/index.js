@@ -3,6 +3,7 @@ const { requireAdminRequest } = require("../shared/auth");
 const {
   applyBlogPostUpdate,
   parseUpdateBlogPostInput,
+  validateBlogPostForSave,
 } = require("../shared/blog-posts");
 const { findPostBySlug, getPostsContainer } = require("../shared/cosmos");
 const { ApiError, handleError, json, noContent } = require("../shared/errors");
@@ -76,6 +77,13 @@ app.http("posts-slug", {
 
         const container = getPostsContainer();
         const updatedPost = applyBlogPostUpdate(existingPost, updates);
+
+        validateBlogPostForSave(updatedPost, {
+          requireFullValidation:
+            existingPost.status === "published" ||
+            updatedPost.status === "published",
+        });
+
         const { resource } = await container
           .item(existingPost.id, existingPost.slug)
           .replace(updatedPost);

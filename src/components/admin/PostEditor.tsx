@@ -48,6 +48,22 @@ const EMPTY_FORM: PostFormState = {
   title: '',
 };
 
+const PUBLISH_REQUIRED_FIELDS: Array<{
+  key: Exclude<keyof BlogPostInput, 'publishedAt' | 'status'> | 'body' | 'tags';
+  label: string;
+}> = [
+  { key: 'title', label: 'Title' },
+  { key: 'body', label: 'Body' },
+  { key: 'slug', label: 'Slug' },
+  { key: 'excerpt', label: 'Excerpt' },
+  { key: 'author', label: 'Author' },
+  { key: 'seoTitle', label: 'SEO Title' },
+  { key: 'seoDescription', label: 'SEO Description' },
+  { key: 'tags', label: 'Tags' },
+  { key: 'featuredImage', label: 'Featured Image' },
+  { key: 'ogImage', label: 'OG Image' },
+];
+
 function mapPostToForm(post: BlogPostDocument): PostFormState {
   return {
     author: post.author,
@@ -87,6 +103,48 @@ function parseDateTimeLocal(value: string): string {
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
+function hasMeaningfulBody(value: string): boolean {
+  if (/<(img|video|iframe|embed|object|figure)\b/i.test(value)) {
+    return true;
+  }
+
+  const textContent = value
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return textContent.length > 0;
+}
+
+function createDraftSlug(title: string): string {
+  return slugify(title) || `draft-${Date.now()}`;
+}
+
+function getMissingFields(
+  payload: BlogPostInput,
+  requireFullValidation: boolean,
+): string[] {
+  if (!requireFullValidation) {
+    return payload.title ? [] : ['Title'];
+  }
+
+  return PUBLISH_REQUIRED_FIELDS.flatMap(({ key, label }) => {
+    if (key === 'body') {
+      return hasMeaningfulBody(payload.body) ? [] : [label];
+    }
+
+    if (key === 'tags') {
+      return payload.tags.length > 0 ? [] : [label];
+    }
+
+    const value = payload[key];
+    return typeof value === 'string' && value.trim() ? [] : [label];
+  });
 }
 
 export default function PostEditor({ mode, postId }: PostEditorProps) {
@@ -316,6 +374,10 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
   }
 
   function buildPayload(status: 'draft' | 'published'): BlogPostInput {
+    const normalizedSlug =
+      status === 'draft' && !form.slug.trim()
+        ? createDraftSlug(form.title)
+        : form.slug.trim();
     const normalizedPublishedAt =
       status === 'published'
         ? form.publishedAt || post?.publishedAt || new Date().toISOString()
@@ -330,7 +392,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
       publishedAt: normalizedPublishedAt,
       seoDescription: form.seoDescription.trim(),
       seoTitle: form.seoTitle.trim(),
-      slug: form.slug.trim(),
+      slug: normalizedSlug,
       status,
       tags: parseTagInput(form.tagsInput),
       title: form.title.trim(),
@@ -371,9 +433,27 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
       setWarning(null);
 
       const payload = buildPayload(status);
+      const requiresFullValidation =
+        status === 'published' || post?.status === 'published';
+      const missingFields = getMissingFields(payload, requiresFullValidation);
 
-      if (!payload.title || !payload.slug || !payload.author) {
-        throw new Error('Title, slug, and author are required.');
+      if (status === 'draft' && payload.title && payload.slug !== form.slug.trim()) {
+        updateForm('slug', payload.slug);
+      }
+
+      if (missingFields.length > 0) {
+        if (!requiresFullValidation) {
+          throw new Error('Title is required to save a draft.');
+        }
+
+        const actionLabel =
+          status === 'published'
+            ? 'publish this post'
+            : 'save changes to a published post';
+
+        throw new Error(
+          `Please complete the required fields to ${actionLabel}: ${missingFields.join(', ')}.`,
+        );
       }
 
       if (mode === 'edit' && post) {
