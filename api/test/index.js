@@ -1,5 +1,10 @@
-module.exports = async function (context) {
-  context.res = {
+const { app } = require("@azure/functions");
+
+app.http("test", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "test",
+  handler: async () => ({
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
@@ -11,5 +16,5 @@ module.exports = async function (context) {
         has_cosmos_key: Boolean(process.env.COSMOS_KEY),
       },
     }),
-  };
-};
+  }),
+});
