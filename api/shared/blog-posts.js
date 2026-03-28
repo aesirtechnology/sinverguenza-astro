@@ -196,9 +196,7 @@ function parseCreateBlogPostInput(payload) {
   const publishedAt =
     status === "published"
       ? normalizeIsoDate(payload.publishedAt || new Date().toISOString(), "publishedAt")
-      : typeof payload.publishedAt === "undefined"
-        ? ""
-        : normalizeIsoDate(payload.publishedAt, "publishedAt");
+      : "";
 
   const input = {
     title,
@@ -280,7 +278,15 @@ function parseUpdateBlogPostInput(payload) {
   }
 
   if ("publishedAt" in payload) {
-    updates.publishedAt = normalizeIsoDate(payload.publishedAt, "publishedAt");
+    if (
+      typeof payload.publishedAt === "undefined" ||
+      payload.publishedAt === null ||
+      (typeof payload.publishedAt === "string" && payload.publishedAt.trim() === "")
+    ) {
+      updates.publishedAt = "";
+    } else {
+      updates.publishedAt = normalizeIsoDate(payload.publishedAt, "publishedAt");
+    }
   }
 
   return updates;

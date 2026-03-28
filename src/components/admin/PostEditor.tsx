@@ -398,7 +398,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     const normalizedPublishedAt =
       status === 'published'
         ? form.publishedAt || post?.publishedAt || new Date().toISOString()
-        : form.publishedAt;
+        : '';
 
     return {
       author: form.author.trim(),
