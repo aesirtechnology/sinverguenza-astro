@@ -221,7 +221,7 @@
 }
 
 .blog-post__prose {
-  max-width: 760px;
+  /*max-width: 760px; */
   margin: 0 auto;
   padding: 2rem;
   border: 1px solid #ffe0e8;
