@@ -384,6 +384,56 @@ body.admin-body {
   max-width: 16rem;
 }
 
+.admin-upload-field {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-upload-field__dropzone {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px dashed var(--admin-border);
+  border-radius: 18px;
+  background: #fcfaf6;
+}
+
+.admin-upload-field__copy p,
+.admin-upload-field__error {
+  margin: 0;
+}
+
+.admin-upload-field__label {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.admin-upload-field__preview {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-upload-field__preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-upload-field__preview a {
+  color: var(--admin-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-upload-field__error {
+  color: var(--admin-danger);
+  font-size: 0.92rem;
+}
+
 .admin-editor {
   overflow: hidden;
   border: 1px solid var(--admin-border);

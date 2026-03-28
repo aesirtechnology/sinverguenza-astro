@@ -9,6 +9,25 @@ interface RebuildResponse {
   message: string;
 }
 
+interface UploadImageResponse {
+  url: string;
+}
+
+async function parseErrorResponse(response: Response): Promise<string> {
+  let message = `Request failed with status ${response.status}.`;
+
+  try {
+    const payload = (await response.json()) as ApiErrorPayload;
+    if (payload.error) {
+      message = payload.error;
+    }
+  } catch {
+    // Ignore JSON parsing errors and keep the default message.
+  }
+
+  return message;
+}
+
 async function requestJson<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -24,18 +43,7 @@ async function requestJson<T>(
   });
 
   if (!response.ok) {
-    let message = `Request failed with status ${response.status}.`;
-
-    try {
-      const payload = (await response.json()) as ApiErrorPayload;
-      if (payload.error) {
-        message = payload.error;
-      }
-    } catch {
-      // Ignore JSON parsing errors and keep the default message.
-    }
-
-    throw new Error(message);
+    throw new Error(await parseErrorResponse(response));
   }
 
   if (response.status === 204) {
@@ -104,4 +112,20 @@ export async function triggerSiteRebuild(): Promise<RebuildResponse> {
   return requestJson<RebuildResponse>('/api/trigger-rebuild', {
     method: 'POST',
   });
+}
+
+export async function uploadImage(file: File): Promise<UploadImageResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/upload-image', {
+    body: formData,
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorResponse(response));
+  }
+
+  return (await response.json()) as UploadImageResponse;
 }

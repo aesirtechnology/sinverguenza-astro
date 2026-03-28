@@ -41,6 +41,7 @@ jobs:
           COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }}
           COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
           GH_PAT: ${{ secrets.GH_PAT }}
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_KIND_DESERT_049299C10 }}
           action: "upload"

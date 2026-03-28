@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -8,10 +8,12 @@ import {
   createPost,
   getPostById,
   triggerSiteRebuild,
+  uploadImage,
   updatePost,
 } from '../../lib/posts-api';
 import type { BlogPostDocument, BlogPostInput } from '../../lib/blog-types';
 import { parseTagInput, slugify } from '../../lib/blog-utils';
+import ImageUploadField from './ImageUploadField';
 
 interface PostEditorProps {
   mode: 'create' | 'edit';
@@ -96,6 +98,8 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [post, setPost] = useState<BlogPostDocument | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [isEditorImageUploading, setIsEditorImageUploading] = useState(false);
+  const editorImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const editor = useEditor({
     content: '<p></p>',
@@ -285,6 +289,30 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: nextUrl }).run();
+  }
+
+  async function handleEditorImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file || !editor) {
+      return;
+    }
+
+    try {
+      setIsEditorImageUploading(true);
+      const { url } = await uploadImage(file);
+      editor.chain().focus().setImage({ src: url }).run();
+      setWarning(null);
+    } catch (uploadError) {
+      setWarning(
+        uploadError instanceof Error
+          ? uploadError.message
+          : 'Unable to upload image.',
+      );
+    } finally {
+      setIsEditorImageUploading(false);
+      event.target.value = '';
+    }
   }
 
   function buildPayload(status: 'draft' | 'published'): BlogPostInput {
@@ -546,8 +574,15 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
                 <button onClick={() => runPromptAction('link')} type="button">
                   Link
                 </button>
+                <button
+                  disabled={isEditorImageUploading}
+                  onClick={() => editorImageInputRef.current?.click()}
+                  type="button"
+                >
+                  {isEditorImageUploading ? 'Uploading…' : 'Upload Image'}
+                </button>
                 <button onClick={() => runPromptAction('image')} type="button">
-                  Image
+                  Image URL
                 </button>
                 <button
                   disabled={!editor?.can().undo()}
@@ -564,6 +599,14 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
                   Redo
                 </button>
               </div>
+
+              <input
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                hidden
+                onChange={(event) => void handleEditorImageUpload(event)}
+                ref={editorImageInputRef}
+                type="file"
+              />
 
               <EditorContent editor={editor} />
             </div>
@@ -632,27 +675,17 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
                 />
               </label>
 
-              <label className="admin-field">
-                <span>Featured Image URL</span>
-                <input
-                  className="admin-input"
-                  onChange={(event) =>
-                    updateForm('featuredImage', event.target.value)
-                  }
-                  type="url"
-                  value={form.featuredImage}
-                />
-              </label>
+              <ImageUploadField
+                label="Featured Image"
+                onChange={(value) => updateForm('featuredImage', value)}
+                value={form.featuredImage}
+              />
 
-              <label className="admin-field">
-                <span>OG Image URL</span>
-                <input
-                  className="admin-input"
-                  onChange={(event) => updateForm('ogImage', event.target.value)}
-                  type="url"
-                  value={form.ogImage}
-                />
-              </label>
+              <ImageUploadField
+                label="OG Image"
+                onChange={(value) => updateForm('ogImage', value)}
+                value={form.ogImage}
+              />
             </div>
           </aside>
         </div>

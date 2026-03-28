@@ -22,6 +22,11 @@
       "route": "/api/trigger-rebuild",
       "methods": ["POST"],
       "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/upload-image",
+      "methods": ["POST"],
+      "allowedRoles": ["authenticated"]
     }
   ],
   "responseOverrides": {
