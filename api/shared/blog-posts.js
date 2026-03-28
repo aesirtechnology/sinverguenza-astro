@@ -115,8 +115,16 @@ function validateBlogPostForSave(post, { requireFullValidation = false } = {}) {
     missingFields.push("title");
   }
 
+  if (!post.author || !post.author.trim()) {
+    missingFields.push("author");
+  }
+
   if (requireFullValidation) {
     for (const [key, label] of PUBLISH_REQUIRED_FIELDS) {
+      if (key === "author") {
+        continue;
+      }
+
       if (key === "body") {
         if (!hasMeaningfulBody(post.body)) {
           missingFields.push(label);

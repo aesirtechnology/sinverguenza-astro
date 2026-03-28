@@ -130,7 +130,17 @@ function getMissingFields(
   requireFullValidation: boolean,
 ): string[] {
   if (!requireFullValidation) {
-    return payload.title ? [] : ['Title'];
+    const missingFields: string[] = [];
+
+    if (!payload.title) {
+      missingFields.push('Title');
+    }
+
+    if (!payload.author) {
+      missingFields.push('Author');
+    }
+
+    return missingFields;
   }
 
   return PUBLISH_REQUIRED_FIELDS.flatMap(({ key, label }) => {
@@ -212,7 +222,14 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     }
 
     if (saved) {
-      window.history.replaceState({}, '', window.location.pathname);
+      params.delete('saved');
+      params.delete('rebuild');
+      const nextQuery = params.toString();
+      const nextUrl = nextQuery
+        ? `${window.location.pathname}?${nextQuery}`
+        : window.location.pathname;
+
+      window.history.replaceState({}, '', nextUrl);
     }
   }, []);
 
@@ -443,7 +460,9 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
 
       if (missingFields.length > 0) {
         if (!requiresFullValidation) {
-          throw new Error('Title is required to save a draft.');
+          throw new Error(
+            `Please complete the required fields to save this draft: ${missingFields.join(', ')}.`,
+          );
         }
 
         const actionLabel =
