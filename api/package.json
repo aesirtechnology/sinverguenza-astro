@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "main": "index.js",
+  "engines": {
+    "node": "~20"
+  },
   "dependencies": {
     "@azure/cosmos": "^4.9.2"
   }
