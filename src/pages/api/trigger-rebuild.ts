@@ -1,3 +1,5 @@
+// Note: Azure Static Web Apps uses the root /api Azure Functions in production.
+// This Astro endpoint remains available for local Node-based development.
 import type { APIRoute } from 'astro';
 import { ApiError, handleApiError, jsonResponse } from '../../lib/api';
 import { requireAdminRequest } from '../../lib/auth';
